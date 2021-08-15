@@ -1,50 +1,93 @@
-import React, { Component } from "react"
-import logo from "./logo.svg"
-import "./App.css"
+import React, {useState} from "react";
+import './App.css';
 
-class LambdaDemo extends Component {
-  constructor(props) {
-    super(props)
-    this.state = { loading: false, msg: null }
-  }
-
-  handleClick = api => e => {
-    e.preventDefault()
-
-    this.setState({ loading: true })
-    fetch("/.netlify/functions/" + api)
-      .then(response => response.json())
-      .then(json => this.setState({ loading: false, msg: json.msg }))
-  }
-
-  render() {
-    const { loading, msg } = this.state
-
-    return (
-      <p>
-        <button onClick={this.handleClick("hello")}>{loading ? "Loading..." : "Call Lambda"}</button>
-        <button onClick={this.handleClick("async-dadjoke")}>{loading ? "Loading..." : "Call Async Lambda"}</button>
-        <br />
-        <span>{msg}</span>
-      </p>
+function TodoList({todo, index, completeTodo, removeTodo}) {
+    return(
+        <div 
+        className="todo" 
+        style={{ textDecoration: todo.isCompleted ? "line-through" : "" }}
+        >
+          {todo.text}
+            <div>
+              <button className="completed" onClick={() => completeTodo(index)}>√</button>
+              <button onClick={() => removeTodo(index)}>×</button>
+            </div>
+        </div>
     )
-  }
 }
 
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <LambdaDemo />
-        </header>
-      </div>
-    )
+function Todoform({ addTodo }) {
+ 
+  const [value, setValue] = useState("");
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    if(!value) return;
+    addTodo(value);
+    setValue("");
   }
+
+  return(
+    <form className="todo-form" onSubmit={handleSubmit}>
+      <h3>Add Something</h3>
+      <input
+        type="text"
+        className="input"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+      />
+      <button type="submit">Add</button>
+    </form>
+  );
 }
 
-export default App
+function App() { 
+  const saveItems = window.localStorage.getItem('todos')
+  const parseItems = JSON.parse(saveItems);
+  const [todos, setTodos] = useState(parseItems || [
+    {
+      text: "Learn React",
+      isCompleted: false
+    }, 
+    {
+      text: "Learn Math",
+      isCompleted: false
+    }
+  ])
+
+  const addTodo = text => {
+    const newTodos = [...todos, { text }];
+    window.localStorage.setItem('todos', JSON.stringify(newTodos));
+    setTodos(newTodos);
+  };
+
+  const completeTodo = index => {
+    const newTodos = [...todos];
+    newTodos[index].isCompleted = true;
+    setTodos(newTodos);
+  };
+
+  const removeTodo = index => {
+    const newTodos = [...todos];
+    newTodos.splice(index, 1);
+    setTodos(newTodos);
+  };
+
+  return (
+    <div className="App">
+        <Todoform addTodo={addTodo} />
+        {todos.map((todo, index) => (
+          
+            <TodoList
+                key={index}
+                index={index}
+                todo={todo}
+                completeTodo={completeTodo}
+                removeTodo={removeTodo}
+            />
+        ))} 
+    </div>
+  );
+}
+
+export default App;
